@@ -1,0 +1,20 @@
+# Product API access declaration. Declare Cribl product API paths your app needs to access.
+# At install time, admins see exactly which platform resources the app will use. These grants
+# apply app-wide, to both the frontend and every backend endpoint.
+
+# The tick endpoint reads leader health, worker health, and recent metrics.
+policies:
+  - object: '/health'
+    actions: ['GET']
+  - object: '/health/workers'
+    actions: ['GET']
+  - object: '/master/workers'
+    actions: ['GET']
+  - object: '/system/metrics/query'
+    actions: ['POST']
+
+# More examples:
+#   - object: '/system/lookups'
+#     actions: ['GET']
+#   - object: '/products/stream/groups'
+#     actions: ['GET']
