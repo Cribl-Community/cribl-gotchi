@@ -2,6 +2,107 @@
 
 A Tamagotchi for your Cribl workspace. It eats logs, wears a unibrow, and dies of backpressure.
 
+## App Overview:
+
+**Cribl-gotchi** is a virtual pet (Tamagotchi-style mascot) embedded as a native Cribl App inside the Cribl Stream or Edge workspace. It translates real-time workspace telemetry into interactive game mechanics, reacting dynamically to the health and throughput of your log pipelines.
+
+* **Data-Driven Growth**: The pet eats incoming event streams and routed bytes, gaining XP, leveling up, and earning "Byte-Coins" ($BC) as data passes through the workspace.
+
+
+* **Evolution & Customization**: Pets evolve through three distinct stages (*Log Blob*, *Stream Serpent*, *Data Titan*) and can be styled with custom sizes, color palettes (e.g., *Chaos Magenta*, *Gangrene LCD*), hats, unibrows, and laser eyes purchased from the Byte-Coin Boutique.
+
+
+* **Telemetry & Stress Mechanics**: The pet's Health (HP), Hunger (NOM), and Happiness (JOY) react to live workspace conditions. High backpressure, dropped events, worker disconnects, or CPU spikes inflict damage and trigger stress animations.
+
+
+* **Pipeline Hazards**: Generates interactive incidents like *Regex Catastrophes* (catastrophic backtracking), *Buffer Overflows*, *Ingestion Storms*, and *Gremlin Jams* that require user intervention to resolve.
+
+
+* **Meeting Time Dilation**: Features adjustable time multipliers ($1\times$, $60\times$ Standup, $600\times$ Incident Bridge) to speed up game ticks for stress testing and quick gameplay.
+
+
+
+---
+
+## Backend Functions
+
+The app uses Cribl Apps' server-side Node.js backend runtime (`backend/tick.ts` and `backend/telemetry.ts`) to execute game state reduction and gather operational metrics independently of the client UI.
+
+| Backend Function / Module | Purpose & Logic |
+| --- | --- |
+| **`onRequest` Handler** | Serves as the primary entry point for HTTP requests to `/api/v1/apps/cribl-gotchi/backend/tick`. Accepts incoming user actions, routes sweep calls, and triggers game ticks.
+
+ |
+| **`tickOne` & `reduce` Engine** | Loads state, executes pure functional state reduction (`engine.ts`), applies damage/XP/coin calculations, processes hazard deadlines, and persists updated state.
+
+ |
+| **`readWorkspaceTelemetry`** | Polls internal Cribl REST APIs to query real-time control plane and data plane metrics.
+
+ |
+| **Sweep Mode (`mode: "sweep"`)** | Scans all stored user pets across the workspace and executes background ticks to advance state even when users are not actively viewing the UI.
+
+ |
+
+### Internal Cribl REST APIs Queried
+
+* `/api/v1/health`: Checks Leader node operational status.
+
+
+* `/api/v1/health/workers` & `/api/v1/master/workers`: Queries Worker node health, disconnect counts, and group statuses.
+
+
+* `/api/v1/system/metrics/query`: Issues JSON POST queries to aggregate cumulative metrics (`total.in_events`, `total.out_events`, `total.dropped_events`, `total.in_bytes`, `total.out_bytes`, `health.inputs`, `health.outputs`) over a 5-minute window.
+
+
+
+---
+
+## Key-Value Store (KVStore) Usage
+
+State persistence relies on Cribl’s App KVStore API (`/api/v1/kvstore/...`), ensuring pet state follows the deployment environment rather than remaining locked in browser local storage.
+
+* **`users/{userId}/state`**:
+* **Contents**: Stores the primary `UserSave` document as plain text JSON.
+
+
+* **Data Model**: Includes current pet stats (`PetRun`), game settings, unlocked inventory items, cumulative metrics, Hall of Fame records, and a graveyard history of up to 30 past deceased pets.
+
+
+
+
+* **`users/{userId}/webhook`**:
+* **Contents**: Stores the user's configured emergency notification endpoint.
+
+
+* **Security**: Written using the `?encrypted=true` query parameter (`PUT /api/v1/kvstore/.../webhook?encrypted=true`), leveraging Cribl's native KV encryption to protect sensitive Slack/Discord webhook URLs.
+
+
+
+
+
+---
+
+## Webhook Integration ("Scream Pipe")
+
+The "Scream Pipe" provides external notifications by sending automated outbound alerts when pipeline conditions severely impact the pet.
+
+* **Trigger Events**:
+* **Health Alerts**: Dispatched when a pet's health drops below the user-configured alert threshold (e.g., `<30%`).
+
+
+* **Death Notifications**: Dispatched immediately when a pet dies from pipeline failure or starvation.
+
+
+* **Test Screams**: Dispatched on demand via `type: "test_scream"` to validate endpoint configuration.
+
+
+
+
+* **Supported Hosts**: Accepts HTTPS webhooks for **Slack** (`hooks.slack.com`) and **Discord** (`discord.com` / `discordapp.com`).
+
+
+* **Payload Formatting**: Constructs ASCII retro LCD terminal art along with markdown-formatted incident details, current speech lines, cause of death, and pet epitaphs. Message formatting automatically adapts between Discord Markdown (`**bold**`) and Slack Mrkdwn (`*bold*`).
+
 This README uses fixed section names and a fixed metadata table so it can be rendered as normal Markdown today and parsed into App Gallery components later.
 
 ## Summary
